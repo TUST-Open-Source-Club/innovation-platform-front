@@ -1,0 +1,59 @@
+/**
+ * CSS 变量定义 - 蓝白主题
+ */
+
+:root {
+  /* 主色调 - 蓝色系 */
+  --primary-color: #1890ff;
+  --primary-light: #40a9ff;
+  --primary-dark: #096dd9;
+  --primary-gradient: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  
+  /* 功能色 */
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --danger-color: #ff4d4f;
+  --info-color: #1890ff;
+
+  /* 文字颜色 */
+  --text-color-primary: #1a1a2e;
+  --text-color-regular: #4a4a68;
+  --text-color-secondary: #8c8ca1;
+  --text-color-placeholder: #b4b4c4;
+
+  /* 边框颜色 */
+  --border-color-base: #e8e8f0;
+  --border-color-light: #f0f0f5;
+  --border-color-lighter: #f5f5fa;
+  --border-color-extra-light: #fafafc;
+
+  /* 背景颜色 */
+  --bg-color: #ffffff;
+  --bg-color-page: #f5f7fa;
+  --bg-color-overlay: #ffffff;
+  --bg-color-dark: #001529;
+
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* 圆角 */
+  --border-radius-sm: 6px;
+  --border-radius-base: 10px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+
+  /* 阴影 */
+  --box-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --box-shadow-base: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --box-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --box-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+  
+  /* 过渡 */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.25s ease;
+  --transition-slow: 0.35s ease;
+}
