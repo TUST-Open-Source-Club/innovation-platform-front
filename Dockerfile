@@ -8,7 +8,7 @@ RUN sed -i 's|https://dl-cdn.alpinelinux.org/alpine|http://mirrors.aliyun.com/al
 WORKDIR /app
 
 # 配置 npm 使用淘宝镜像源（npmmirror）
-RUN npm config set registry https://registry.npmmirror.com
+# RUN npm config set registry https://registry.npmmirror.com
 
 # 复制依赖文件
 COPY package*.json ./
