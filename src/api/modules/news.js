@@ -72,9 +72,25 @@ export function updateNews(id, data) {
 }
 
 /**
- * 删除新闻
+ * 删除新闻（硬删除，仅草稿状态）
  * @param {number|string} id - 新闻ID
  */
 export function deleteNews(id) {
   return handleResponse(del(`/news/${id}`))
+}
+
+/**
+ * 软删除新闻（任意状态）
+ * @param {number|string} id - 新闻ID
+ */
+export function softDeleteNews(id) {
+  return handleResponse(del(`/news/${id}/soft`))
+}
+
+/**
+ * 批量软删除新闻
+ * @param {number[]|string[]} ids - 新闻ID数组
+ */
+export function batchDeleteNews(ids) {
+  return handleResponse(del('/news/batch', { data: { ids } }))
 }

@@ -1,18 +1,38 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { getToken } from '@/utils/storage'
 
 const api = axios.create({
   baseURL: '/api',
   timeout: 30000
 })
 
+/**
+ * 获取当前有效的 token
+ * 优先从 store 获取，如果没有则从 localStorage 获取（解决刷新后 token 丢失问题）
+ */
+function getValidToken() {
+  const userStore = useUserStore()
+  // 优先从 store 获取
+  if (userStore.token) {
+    return userStore.token
+  }
+  // store 中没有，从 localStorage 获取
+  const token = getToken()
+  if (token) {
+    // 同步恢复到 store
+    userStore.token = token
+  }
+  return token
+}
+
 // 请求拦截器
 api.interceptors.request.use(
   config => {
-    const userStore = useUserStore()
-    if (userStore.token) {
-      config.headers.Authorization = `Bearer ${userStore.token}`
+    const token = getValidToken()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },

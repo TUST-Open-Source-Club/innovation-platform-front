@@ -4,48 +4,69 @@
  * v-permission="['admin', 'user']" - 需要 admin 或 user 权限
  */
 
-import { usePermission } from '@/composables/usePermission'
+import { getUser } from '@/utils/storage'
+
+/**
+ * 从 localStorage 获取当前用户角色
+ * 不依赖 store，避免组件挂载时 store 未初始化的问题
+ */
+function getCurrentUserRole() {
+  try {
+    const user = getUser()
+    return user?.role || ''
+  } catch (e) {
+    console.error('读取用户角色失败:', e)
+    return ''
+  }
+}
+
+/**
+ * 检查是否有指定角色
+ */
+function hasRole(roles) {
+  if (!Array.isArray(roles)) {
+    roles = [roles]
+  }
+  const currentRole = getCurrentUserRole()
+  return roles.includes(currentRole)
+}
 
 export default {
   mounted(el, binding) {
-    const { hasRole, hasPermission } = usePermission()
     const value = binding.value
-    
+
     let hasAccess = false
-    
+
     // 如果是角色权限
     if (typeof value === 'string' || Array.isArray(value)) {
       hasAccess = hasRole(value)
     }
-    
+
     // 如果是权限标识
     if (typeof value === 'string' && value.startsWith('permission:')) {
       const permission = value.replace('permission:', '')
-      hasAccess = hasPermission(permission)
+      // 权限功能待实现
+      hasAccess = false
     }
-    
+
     if (!hasAccess) {
       el.style.display = 'none'
-      // 或者完全移除元素
-      // el.parentNode?.removeChild(el)
     }
   },
   updated(el, binding) {
-    // 权限更新时重新检查
-    const { hasRole, hasPermission } = usePermission()
     const value = binding.value
-    
+
     let hasAccess = false
-    
+
     if (typeof value === 'string' || Array.isArray(value)) {
       hasAccess = hasRole(value)
     }
-    
+
     if (typeof value === 'string' && value.startsWith('permission:')) {
       const permission = value.replace('permission:', '')
-      hasAccess = hasPermission(permission)
+      hasAccess = false
     }
-    
+
     el.style.display = hasAccess ? '' : 'none'
   }
 }
