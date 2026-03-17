@@ -58,6 +58,14 @@
                 >
                   提交
                 </el-button>
+                <el-button
+                  v-if="isSchoolAdmin"
+                  type="danger"
+                  size="small"
+                  @click="handleDelete(row)"
+                >
+                  删除
+                </el-button>
               </div>
             </div>
           </div>
@@ -159,7 +167,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMyProjects, getProjects, getUnclaimedProjects, submitProject } from '@/api/modules/project'
+import { getMyProjects, getProjects, getUnclaimedProjects, submitProject, deleteProject } from '@/api/modules/project'
 import { applyTakeoverProject } from '@/api/modules/informationLink'
 import { useUserStore } from '@/stores/user'
 import { formatDateTime } from '@/utils/format'
@@ -179,6 +187,11 @@ const loadingUnclaimed = ref(false)
 const isAdmin = computed(() => {
   const role = userStore.user?.role
   return role === 'COLLEGE_ADMIN' || role === 'SCHOOL_ADMIN'
+})
+
+// 判断是否为系统管理员（仅系统管理员可删除）
+const isSchoolAdmin = computed(() => {
+  return userStore.user?.role === 'SCHOOL_ADMIN'
 })
 
 // “所有项目”列表：只展示已通过的项目
@@ -374,6 +387,34 @@ const handleSubmit = async (id) => {
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '提交失败')
+    }
+  }
+}
+
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除项目"${row.title}"吗？删除后将无法恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    await deleteProject(row.id)
+    ElMessage.success('项目已删除')
+    // 根据当前标签页刷新对应的列表
+    if (activeTab.value === 'all') {
+      loadProjects()
+    } else if (activeTab.value === 'my') {
+      loadMyProjects()
+    } else if (activeTab.value === 'unclaimed') {
+      loadUnclaimedProjects()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
     }
   }
 }

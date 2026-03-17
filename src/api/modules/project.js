@@ -58,3 +58,10 @@ export function transferLeader(projectId, newLeaderUserId) {
 export function vacateLeader(projectId) {
   return handleResponse(post(`/projects/${projectId}/vacate-leader`))
 }
+
+/**
+ * 删除项目（软删除，仅系统管理员）
+ */
+export function deleteProject(projectId) {
+  return handleResponse(del(`/projects/${projectId}`))
+}

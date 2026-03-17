@@ -50,12 +50,13 @@
                 <el-tag :type="getActivityDisplayApprovalType(row)">{{ getActivityDisplayApprovalText(row) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="250">
+            <el-table-column label="操作" width="300">
               <template #default="{ row }">
                 <el-button link type="primary" @click="handleView(row.id)">查看</el-button>
                 <el-button v-if="(row.status === 'DRAFT' && isMyActivity(row)) || isAdmin" link type="primary" @click="handleEdit(row.id)">编辑</el-button>
                 <el-button v-if="row.status === 'DRAFT' && isMyActivity(row)" link type="success" @click="handleSubmit(row.id)">提交</el-button>
                 <el-button v-if="row.status === 'PUBLISHED' && isMyActivity(row)" link type="warning" @click="handleSummary(row.id)">总结</el-button>
+                <el-button v-if="canDelete(row)" link type="danger" @click="handleDelete(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -123,12 +124,13 @@
             <el-tag :type="getActivityDisplayApprovalType(row)">{{ getActivityDisplayApprovalText(row) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="250">
+        <el-table-column label="操作" width="300">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleView(row.id)">查看</el-button>
             <el-button v-if="(row.status === 'DRAFT' && isMyActivity(row)) || isAdmin" link type="primary" @click="handleEdit(row.id)">编辑</el-button>
             <el-button v-if="row.status === 'DRAFT' && isMyActivity(row)" link type="success" @click="handleSubmit(row.id)">提交</el-button>
             <el-button v-if="row.status === 'PUBLISHED' && isMyActivity(row)" link type="warning" @click="handleSummary(row.id)">总结</el-button>
+            <el-button v-if="canDelete(row)" link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -150,7 +152,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getActivities, submitActivity } from '@/api/modules/activity'
+import { getActivities, submitActivity, deleteActivity } from '@/api/modules/activity'
 import { useTable } from '@/composables/useTable'
 import { usePermission } from '@/composables/usePermission'
 import { useUserStore } from '@/stores/user'
@@ -263,6 +265,45 @@ const handleReset = () => {
   searchForm.keyword = ''
   searchForm.status = ''
   handleSearch()
+}
+
+/**
+ * 判断是否可以删除活动
+ * 规则：组织者本人或管理员可以删除，但进行中/已完成的活动不能删除
+ */
+const canDelete = (row) => {
+  // 只有组织者本人或管理员可以删除
+  const hasPermission = isMyActivity(row) || isAdmin.value
+  if (!hasPermission) return false
+
+  // 进行中(ONGOING)或已完成(COMPLETED)的活动不能删除
+  if (row.status === 'ONGOING' || row.status === 'COMPLETED') return false
+
+  return true
+}
+
+/**
+ * 删除活动
+ */
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除活动"${row.title}"吗？删除后将无法恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    await deleteActivity(row.id)
+    ElMessage.success('活动已删除')
+    loadData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
 }
 </script>
 

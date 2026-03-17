@@ -135,3 +135,11 @@ export function getActivitySummaries(params = {}) {
   const { pageNum = 1, pageSize = 10 } = params
   return handleResponse(get('/activities/summaries', { pageNum, pageSize }))
 }
+
+/**
+ * 删除活动（逻辑删除）
+ * @param {number} id - 活动ID
+ */
+export function deleteActivity(id) {
+  return handleResponse(del(`/activities/${id}`))
+}
