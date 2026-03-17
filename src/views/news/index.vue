@@ -42,8 +42,33 @@
         </el-form-item>
       </el-form>
 
+      <!-- 批量操作栏 -->
+      <div v-if="isSchoolAdmin || isCollegeAdmin" class="batch-actions-bar">
+        <el-button
+          type="danger"
+          size="small"
+          :disabled="selectedNews.length === 0"
+          @click="handleBatchDelete"
+        >
+          批量删除
+        </el-button>
+        <span v-if="selectedNews.length > 0" class="selected-count">
+          已选择 {{ selectedNews.length }} 项
+        </span>
+      </div>
+
       <!-- 新闻列表 -->
-      <el-table :data="tableData" v-loading="loading" style="width: 100%">
+      <el-table
+        :data="tableData"
+        v-loading="loading"
+        style="width: 100%"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column
+          v-if="isSchoolAdmin || isCollegeAdmin"
+          type="selection"
+          width="55"
+        />
         <el-table-column prop="title" label="标题" show-overflow-tooltip />
         <el-table-column prop="authorName" label="作者" width="120" />
         <el-table-column prop="categoryName" label="分类" width="120" />
@@ -58,7 +83,7 @@
             {{ formatDateTime(row.publishTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
+        <el-table-column label="操作" width="220">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleView(row.id)">查看</el-button>
             <el-button
@@ -68,6 +93,24 @@
               @click="handleEdit(row.id)"
             >
               编辑
+            </el-button>
+            <!-- 硬删除仅对草稿状态的管理员显示 -->
+            <el-button
+              v-if="(isCollegeAdmin || isSchoolAdmin) && row.status === 'DRAFT'"
+              link
+              type="danger"
+              @click="handleDelete(row)"
+            >
+              彻底删除
+            </el-button>
+            <!-- 软删除对已发布/已驳回状态的管理员显示 -->
+            <el-button
+              v-if="(isCollegeAdmin || isSchoolAdmin) && row.status !== 'DRAFT'"
+              link
+              type="danger"
+              @click="handleSoftDelete(row)"
+            >
+              删除
             </el-button>
           </template>
         </el-table-column>
@@ -91,8 +134,8 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { getNews } from '@/api/modules/news'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getNews, deleteNews, softDeleteNews, batchDeleteNews } from '@/api/modules/news'
 import { useTable } from '@/composables/useTable'
 import { usePermission } from '@/composables/usePermission'
 import { useUserStore } from '@/stores/user'
@@ -107,6 +150,34 @@ const searchForm = reactive({
   title: '',
   status: 'PUBLISHED' // 默认显示已发布的新闻，空表示全部
 })
+
+// 批量选择相关
+const selectedNews = ref([])
+
+const handleSelectionChange = (selection) => {
+  selectedNews.value = selection
+}
+
+const handleBatchDelete = async () => {
+  if (selectedNews.value.length === 0) {
+    ElMessage.warning('请选择要删除的新闻')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedNews.value.length} 条新闻吗？删除后可在数据库中恢复。`,
+      '确认批量删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    const ids = selectedNews.value.map(item => item.id)
+    await batchDeleteNews(ids)
+    ElMessage.success('批量删除成功')
+    selectedNews.value = []
+    loadData()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(e?.message || '批量删除失败')
+  }
+}
 
 const { tableData, loading, page, size, total, loadData, handlePageChange, handleSizeChange } = useTable(
   async (params) => {
@@ -151,6 +222,38 @@ const handleReset = () => {
   searchForm.status = ''
   handleSearch()
 }
+
+// 硬删除（仅草稿状态）
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要彻底删除新闻「${row.title}」吗？此操作不可恢复！`,
+      '确认彻底删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'danger' }
+    )
+    await deleteNews(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(e?.message || '删除失败')
+  }
+}
+
+// 软删除（任意状态）
+const handleSoftDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除新闻「${row.title}」吗？删除后可在数据库中恢复。`,
+      '确认删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    await softDeleteNews(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(e?.message || '删除失败')
+  }
+}
 </script>
 
 <style scoped>
@@ -169,5 +272,20 @@ const handleReset = () => {
   padding: 20px;
   background-color: #f5f7fa;
   border-radius: 4px;
+}
+
+.batch-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.batch-actions-bar .selected-count {
+  color: #606266;
+  font-size: 14px;
 }
 </style>

@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login as loginApi, register as registerApi } from '@/api/modules/auth'
-import { getToken, setToken, removeToken, getUser, setUser, removeUser } from '@/utils/storage'
+import { getToken, setToken, removeToken, getUser, setUser as setUserToStorage, removeUser } from '@/utils/storage'
 
 export const useUserStore = defineStore('user', () => {
+  // 从 localStorage 初始化，确保刷新后状态能恢复
   const token = ref(getToken() || '')
   const user = ref(getUser())
 
@@ -16,7 +17,7 @@ export const useUserStore = defineStore('user', () => {
       token.value = data.token
       user.value = data.user
       setToken(data.token)
-      setUser(data.user)
+      setUserToStorage(data.user)
       return data
     } catch (error) {
       throw error
@@ -41,6 +42,26 @@ export const useUserStore = defineStore('user', () => {
 
   function setUser(userData) {
     user.value = userData
+    // 同步更新到 localStorage
+    if (userData) {
+      setUserToStorage(userData)
+    }
+  }
+
+  /**
+   * 从 localStorage 同步恢复状态
+   * 用于在应用启动时或需要时恢复用户状态
+   */
+  function restoreFromStorage() {
+    const storedToken = getToken()
+    const storedUser = getUser()
+
+    if (storedToken) {
+      token.value = storedToken
+    }
+    if (storedUser) {
+      user.value = storedUser
+    }
   }
 
   return {
@@ -51,6 +72,7 @@ export const useUserStore = defineStore('user', () => {
     login,
     register,
     logout,
-    setUser
+    setUser,
+    restoreFromStorage
   }
 })

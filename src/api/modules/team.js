@@ -79,3 +79,19 @@ export function importTeamsExcel(file) {
   formData.append('file', file)
   return handleResponse(api.post('/teams/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } }))
 }
+
+/**
+ * 删除团队（软删除）
+ * @param {number|string} id - 团队ID
+ */
+export function deleteTeam(id) {
+  return handleResponse(del(`/teams/${id}`))
+}
+
+/**
+ * 批量删除团队（软删除）
+ * @param {number[]|string[]} ids - 团队ID数组
+ */
+export function batchDeleteTeams(ids) {
+  return handleResponse(del('/teams/batch', { data: { ids } }))
+}

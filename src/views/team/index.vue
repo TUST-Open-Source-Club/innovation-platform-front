@@ -19,12 +19,41 @@
       <el-tabs v-model="activeTab">
         <!-- 团队列表（来自 team 表） -->
         <el-tab-pane label="团队列表" name="teams">
+          <!-- 批量操作栏 -->
+          <div v-if="isAdmin" class="batch-actions-bar">
+            <el-checkbox
+              v-model="isAllSelected"
+              :indeterminate="isIndeterminate"
+              @change="handleSelectAll"
+            >
+              全选
+            </el-checkbox>
+            <el-button
+              type="danger"
+              size="small"
+              :disabled="selectedTeams.length === 0"
+              @click="handleBatchDelete"
+            >
+              批量删除
+            </el-button>
+            <span v-if="selectedTeams.length > 0" class="selected-count">
+              已选择 {{ selectedTeams.length }} 项
+            </span>
+          </div>
           <div v-loading="loading" class="list-cards">
             <div
               v-for="row in teams"
               :key="row.id"
               class="list-card"
+              :class="{ 'is-selected': isSelected(row) }"
             >
+              <!-- 批量选择复选框 -->
+              <div v-if="isAdmin" class="card-checkbox">
+                <el-checkbox
+                  :model-value="isSelected(row)"
+                  @change="(val) => handleSelectChange(row, val)"
+                />
+              </div>
               <div class="list-card-title">{{ row.name }}</div>
               <div class="list-card-meta">
                 <el-tag class="list-card-tag" type="primary" size="small" effect="light">团队</el-tag>
@@ -65,6 +94,14 @@
               <div class="list-card-actions">
                 <el-button type="primary" size="small" @click="handleViewTeam(row.id)">详情</el-button>
                 <div class="list-card-actions-right">
+                  <el-button
+                    v-if="isAdmin"
+                    type="danger"
+                    size="small"
+                    @click="handleDelete(row)"
+                  >
+                    删除
+                  </el-button>
                   <el-button
                     v-if="canJoinTeam(row)"
                     type="success"
@@ -160,7 +197,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTeams, getAllTeamMembers, exportTeamsExcel, importTeamsExcel } from '@/api/modules/team'
+import { getTeams, getAllTeamMembers, exportTeamsExcel, importTeamsExcel, deleteTeam, batchDeleteTeams } from '@/api/modules/team'
 import TeamApplyDialog from '@/components/TeamApplyDialog.vue'
 import { getMyApplications, submitEntryApplication } from '@/api/modules/entryApplication'
 import { usePermission } from '@/composables/usePermission'
@@ -184,6 +221,68 @@ const importFile = ref(null)
 const importLoading = ref(false)
 // 存储每个团队的用户状态: 'APPROVED'=已加入, 'PENDING'=待审批, null=未申请
 const teamMemberStatus = ref({})
+// 批量选择相关
+const selectedTeams = ref([])
+
+// 是否全选
+const isAllSelected = computed(() => {
+  return teams.value.length > 0 && selectedTeams.value.length === teams.value.length
+})
+
+// 是否半选
+const isIndeterminate = computed(() => {
+  return selectedTeams.value.length > 0 && selectedTeams.value.length < teams.value.length
+})
+
+// 检查某行是否被选中
+const isSelected = (row) => {
+  return selectedTeams.value.some(item => item.id === row.id)
+}
+
+// 处理单行选择
+const handleSelectChange = (row, checked) => {
+  if (checked) {
+    if (!isSelected(row)) {
+      selectedTeams.value.push(row)
+    }
+  } else {
+    const index = selectedTeams.value.findIndex(item => item.id === row.id)
+    if (index > -1) {
+      selectedTeams.value.splice(index, 1)
+    }
+  }
+}
+
+// 处理全选
+const handleSelectAll = (checked) => {
+  if (checked) {
+    selectedTeams.value = [...teams.value]
+  } else {
+    selectedTeams.value = []
+  }
+}
+
+// 批量删除
+const handleBatchDelete = async () => {
+  if (selectedTeams.value.length === 0) {
+    ElMessage.warning('请选择要删除的团队')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedTeams.value.length} 个团队吗？删除后可在数据库中恢复。`,
+      '确认批量删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    const ids = selectedTeams.value.map(item => item.id)
+    await batchDeleteTeams(ids)
+    ElMessage.success('批量删除成功')
+    selectedTeams.value = []
+    loadTeams()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(e?.message || '批量删除失败')
+  }
+}
 
 const getStatusText = (status) => STATUS_TEXT[status] || status
 const getStatusType = (status) => STATUS_TYPE[status] || ''
@@ -397,6 +496,21 @@ const handleSubmit = async (id) => {
   }
 }
 
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除团队「${row.name}」吗？删除后可在数据库中恢复。`,
+      '确认删除',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    await deleteTeam(row.id)
+    ElMessage.success('删除成功')
+    loadTeams()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(e?.message || '删除失败')
+  }
+}
+
 onMounted(() => {
   loadTeams()
   loadMyApplications()
@@ -553,6 +667,39 @@ onMounted(() => {
 
 .list-card-actions-right {
   display: flex;
+  gap: 8px;
+}
+
+/* 批量操作栏 */
+.batch-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.batch-actions-bar .selected-count {
+  color: #606266;
+  font-size: 14px;
+}
+
+/* 卡片复选框 */
+.card-checkbox {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.list-card {
+  position: relative;
+}
+
+.list-card.is-selected {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
   align-items: center;
   gap: 8px;
 }
