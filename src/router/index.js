@@ -55,28 +55,6 @@ const routes = [
 
       // 审核中心（整合四类审核）
       ...adminRoutes,
-
-      // 其他路由
-      // 注意：以下路由暂时注释，待实现对应组件后再启用
-      // {
-      //   path: 'review',
-      //   name: 'Review',
-      //   component: () => import('@/views/Review.vue'),
-      //   meta: {
-      //     title: '项目审核',
-      //     requiresAuth: true,
-      //     roles: ['COLLEGE_ADMIN', 'SCHOOL_ADMIN']
-      //   }
-      // },
-      // {
-      //   path: 'profile',
-      //   name: 'Profile',
-      //   component: () => import('@/views/profile/Profile.vue'),
-      //   meta: {
-      //     title: '个人中心',
-      //     requiresAuth: true
-      //   }
-      // }
     ]
   }
 ]
@@ -124,10 +102,22 @@ function getCurrentUserRole() {
   return storedUser?.role || null
 }
 
+// 白名单：不需要登录就能访问的页面
+const whiteList = ['/login', '/register'] 
+
 router.beforeEach((to, from, next) => {
-  // 需要登录但未登录，跳转到登录页
+  // 白名单页面直接放行
+  if (whiteList.includes(to.path)) {
+    next()
+    return
+  }
+
+  // 需要登录但未登录，跳转到登录页，并携带当前页面路径，登录后可跳转回来
   if (to.meta.requiresAuth && !isLoggedIn()) {
-    next('/login')
+    next({ 
+      path: '/login', 
+      query: { redirect: to.fullPath } // 记录要跳转的页面
+    })
     return
   }
 
