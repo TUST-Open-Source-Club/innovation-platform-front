@@ -305,9 +305,13 @@ const { formRef, formData, submitForm, resetForm } = useForm({
   attachments: ''
 })
 
+// 核心修改：给applicantStudentId新增字母+数字格式校验
 const formRules = {
   teamName: [{ required: true, message: '请输入创新团队名称', trigger: 'blur' }],
-  applicantStudentId: [{ required: true, message: '请输入发起人学号', trigger: 'blur' }],
+  applicantStudentId: [
+    { required: true, message: '请输入发起人学号', trigger: 'blur' },
+    { pattern: /^[A-Za-z0-9]+$/, message: '学号只能包含大小写字母和数字', trigger: 'blur' }
+  ],
   applicantPhone: [
     { required: true, message: '请输入发起人联系方式', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
