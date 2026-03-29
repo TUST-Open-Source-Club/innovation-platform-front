@@ -73,6 +73,21 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- ====================== -->
+      <!-- 我帮你加的分页在这里 ↓↓↓ -->
+      <!-- ====================== -->
+      <div style="margin-top:20px; text-align:right;">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10,20,50]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
 
     <!-- 组织详情抽屉 -->
@@ -186,6 +201,13 @@ const currentOrganization = ref(null)
 const members = ref([])
 const memberSearchKeyword = ref('')
 
+// ======================
+// 分页变量（我加的）
+// ======================
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
 const searchForm = reactive({
   keyword: '',
   organizationTypeId: null,
@@ -211,11 +233,21 @@ const isMyOrganization = (org) => {
 const loadOrganizations = async () => {
   loading.value = true
   try {
-    const result = await getOrganizations(searchForm)
+    // 把分页参数带给后端
+    const params = {
+      ...searchForm,
+      page: currentPage.value,
+      pageSize: pageSize.value
+    }
+    const result = await getOrganizations(params)
+    
     if (result && result.data) {
-      organizations.value = result.data
+      // 兼容两种后端返回格式
+      organizations.value = result.data.records || result.data.list || result.data
+      total.value = result.data.total || result.data.count || organizations.value.length
     } else {
       organizations.value = []
+      total.value = 0
     }
   } catch (error) {
     ElMessage.error('加载组织列表失败')
@@ -236,6 +268,7 @@ const loadOrganizationTypes = async () => {
 }
 
 const handleSearch = () => {
+  currentPage.value = 1 // 搜索回到第一页
   loadOrganizations()
 }
 
@@ -243,6 +276,20 @@ const handleReset = () => {
   searchForm.keyword = ''
   searchForm.organizationTypeId = null
   searchForm.status = ''
+  currentPage.value = 1
+  loadOrganizations()
+}
+
+// ======================
+// 分页切换（我加的）
+// ======================
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  loadOrganizations()
+}
+
+const handleCurrentChange = (val) => {
+  currentPage.value = val
   loadOrganizations()
 }
 
@@ -305,9 +352,7 @@ const handleRemoveMember = async (member) => {
   }
 }
 
-const handleSearchMember = () => {
-  // 搜索逻辑已在 computed 中实现
-}
+const handleSearchMember = () => {}
 
 onMounted(() => {
   loadOrganizationTypes()
