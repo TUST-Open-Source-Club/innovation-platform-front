@@ -92,3 +92,11 @@ export function getPendingReservations() {
 export function getReservationsByStatus(status) {
   return handleResponse(get('/spaces/reservations/admin', { status }))
 }
+
+/**
+ * 创建入驻空间
+ * @param {Object} data - 空间表单数据
+ */
+export function createSpace(data) {
+    return handleResponse(post(`/spaces/create`, data))
+}

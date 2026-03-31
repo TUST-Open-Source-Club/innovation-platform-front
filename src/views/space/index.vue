@@ -7,6 +7,7 @@
           <div>
             <el-button @click="showMyReservations">我的预约</el-button>
             <el-button v-if="isAdmin" @click="goToAdmin">预约审核</el-button>
+            <el-button v-if="isAdmin" @click="handleOpenCreateSpace">创建入驻</el-button>
             <el-button type="primary" @click="handleReserve">预约空间</el-button>
           </div>
         </div>
@@ -204,6 +205,28 @@
         <el-empty description="暂无预约记录" />
       </template>
     </el-dialog>
+
+<!--创建入驻空间-->
+    <el-dialog v-model="createSpaceVisible" title="新增空间/教室入驻" width="500px" destroy-on-close>
+      <el-form :model="spaceForm" ref="createSpaceFormRef" label-width="100px">
+        <el-form-item label="空间名称" required>
+          <el-input v-model="spaceForm.name" placeholder="请输入空间名称" />
+        </el-form-item>
+        <el-form-item label="位置" required>
+          <el-input v-model="spaceForm.location" placeholder="例如：创新创业学院A405" />
+        </el-form-item>
+        <el-form-item label="容量人数">
+          <el-input-number v-model="spaceForm.capacity" :min="1" />
+        </el-form-item>
+        <el-form-item label="空间描述">
+          <el-input v-model="spaceForm.description" type="textarea" rows="3" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createSpaceVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="submitSpace">立即创建</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -212,7 +235,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatTime } from '@/utils/format'
-import { getSpaces, createReservation, getMyReservations, cancelReservation, getSpaceOccupiedSlots, updateSpaceStatus } from '@/api/modules/space'
+import { createSpace, getSpaces, createReservation, getMyReservations, cancelReservation, getSpaceOccupiedSlots, updateSpaceStatus } from '@/api/modules/space'
 import { usePermission } from '@/composables/usePermission'
 import { STATUS_TEXT, STATUS_TYPE } from '@/constants'
 import dayjs from 'dayjs'
@@ -244,6 +267,38 @@ const reservationForm = reactive({
   attendeeCount: 1,
   contactPhone: ''
 })
+
+
+// --- 创建空间（管理员）相关 ---
+const createSpaceVisible = ref(false)
+const submitLoading = ref(false)
+const createSpaceFormRef = ref(null)
+const spaceForm = reactive({
+  name: '',
+  location: '',
+  capacity: 10,
+  description: '',
+  status: 'AVAILABLE'
+})
+const handleOpenCreateSpace = () => {
+  createSpaceVisible.value = true
+  Object.assign(spaceForm, { name: '', location: '', capacity: 10, description: '', status: 'AVAILABLE' })
+}
+
+const submitSpace = async () => {
+  if (!spaceForm.name || !spaceForm.location) return ElMessage.warning('请填写名称和位置')
+  submitLoading.value = true
+  try {
+    await createSpace(spaceForm)
+    ElMessage.success('空间创建成功！')
+    createSpaceVisible.value = false
+    loadSpaces()
+  } catch (error) {
+    ElMessage.error(error.message || '创建失败')
+  } finally {
+    submitLoading.value = false
+  }
+}
 
 // 空间下拉实际选中值：为 number（空间 id）或 'OTHER'
 const spaceSelectValue = ref(null)
@@ -484,7 +539,7 @@ const handleCancelReservation = async (reservation) => {
         type: 'warning'
       }
     )
-    
+
     await cancelReservation(reservation.id)
     ElMessage.success('预约已取消')
     // 重新加载预约列表
