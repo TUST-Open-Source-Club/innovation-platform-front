@@ -104,6 +104,10 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>
+                  个人资料
+                </el-dropdown-item>
                 <el-dropdown-item command="password">
                   <el-icon><Lock /></el-icon>
                   修改密码
@@ -170,7 +174,8 @@ const currentPageTitle = computed(() => {
     '/persons': '人员库',
     '/admin/review': '审核中心',
     '/admin/users': '用户管理',
-    '/change-password': '修改密码'
+    '/change-password': '修改密码',
+    '/profile': '个人资料'
   }
   return titleMap[route.path] || '创新创业服务系统'
 })
@@ -186,6 +191,8 @@ const handleCommand = (command) => {
     router.push('/login')
   } else if (command === 'password') {
     router.push('/change-password')
+  } else if (command === 'profile') {
+    router.push('/profile')
   }
 }
 </script>

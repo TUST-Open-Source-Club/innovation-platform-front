@@ -19,5 +19,32 @@ export default [
       title: '注册',
       requiresAuth: false
     }
+  },
+  {
+    path: '/cas-callback',
+    name: 'CasCallback',
+    component: () => import('@/views/auth/CasCallback.vue'),
+    meta: {
+      title: 'CAS登录处理',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/cas-merge',
+    name: 'CasMerge',
+    component: () => import('@/views/auth/CasMerge.vue'),
+    meta: {
+      title: '账号合并',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/complete-profile',
+    name: 'CompleteProfile',
+    component: () => import('@/views/auth/CompleteProfile.vue'),
+    meta: {
+      title: '完善资料',
+      requiresAuth: true
+    }
   }
 ]

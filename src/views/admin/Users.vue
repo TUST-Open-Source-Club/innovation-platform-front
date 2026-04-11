@@ -56,9 +56,17 @@
     >
       <el-table-column prop="username" label="用户名" min-width="120" />
       <el-table-column prop="realName" label="真实姓名" min-width="120" />
-      <el-table-column prop="role" label="角色" width="120">
+      <el-table-column prop="role" label="角色" width="100">
         <template #default="{ row }">
           <el-tag :type="getRoleType(row.role)">{{ getRoleName(row.role) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="authType" label="认证方式" width="120">
+        <template #default="{ row }">
+          <el-tag :type="getAuthType(row.authType)" size="small">
+            {{ getAuthTypeName(row.authType) }}
+          </el-tag>
+          <div v-if="row.casUid" class="cas-uid">{{ row.casUid }}</div>
         </template>
       </el-table-column>
       <el-table-column prop="collegeName" label="所属学院" min-width="150" show-overflow-tooltip />

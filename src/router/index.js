@@ -14,6 +14,7 @@ import informationLinkRoutes from './modules/informationLink'
 import newsRoutes from './modules/news'
 import entryApplicationRoutes from './modules/entryApplication'
 import adminRoutes from './modules/admin'
+import userRoutes from './modules/user'
 
 const routes = [
   // 认证路由（不需要布局）
@@ -55,6 +56,9 @@ const routes = [
 
       // 审核中心（整合四类审核）
       ...adminRoutes,
+
+      // 个人中心
+      ...userRoutes,
     ]
   }
 ]
@@ -103,7 +107,7 @@ function getCurrentUserRole() {
 }
 
 // 白名单：不需要登录就能访问的页面
-const whiteList = ['/login', '/register'] 
+const whiteList = ['/login', '/register', '/cas-callback', '/cas-merge'] 
 
 router.beforeEach((to, from, next) => {
   // 白名单页面直接放行
