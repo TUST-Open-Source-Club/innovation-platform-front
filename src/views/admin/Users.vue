@@ -16,6 +16,9 @@
       <el-form-item label="用户名">
         <el-input v-model="searchForm.username" placeholder="请输入用户名" clearable />
       </el-form-item>
+      <el-form-item label="学号/工号">
+        <el-input v-model="searchForm.casUid" placeholder="请输入学号或工号" clearable />
+      </el-form-item>
       <el-form-item label="真实姓名">
         <el-input v-model="searchForm.realName" placeholder="请输入真实姓名" clearable />
       </el-form-item>
@@ -55,18 +58,23 @@
       @page-change="fetchUserList"
     >
       <el-table-column prop="username" label="用户名" min-width="120" />
+      <el-table-column prop="casUid" label="学号/工号" min-width="120">
+        <template #default="{ row }">
+          <span v-if="row.casUid" class="cas-uid-text">{{ row.casUid }}</span>
+          <span v-else class="no-cas-uid">-</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="realName" label="真实姓名" min-width="120" />
       <el-table-column prop="role" label="角色" width="100">
         <template #default="{ row }">
           <el-tag :type="getRoleType(row.role)">{{ getRoleName(row.role) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="authType" label="认证方式" width="120">
+      <el-table-column prop="authType" label="认证方式" width="100">
         <template #default="{ row }">
           <el-tag :type="getAuthType(row.authType)" size="small">
             {{ getAuthTypeName(row.authType) }}
           </el-tag>
-          <div v-if="row.casUid" class="cas-uid">{{ row.casUid }}</div>
         </template>
       </el-table-column>
       <el-table-column prop="collegeName" label="所属学院" min-width="150" show-overflow-tooltip />
@@ -272,6 +280,7 @@ import { getAllColleges } from '@/api/modules/college'
 // 搜索表单
 const searchForm = reactive({
   username: '',
+  casUid: '',
   realName: '',
   role: '',
   collegeId: '',
@@ -374,6 +383,26 @@ const getRoleType = (role) => {
     'SCHOOL_ADMIN': 'danger'
   }
   return typeMap[role] || 'info'
+}
+
+// 获取认证方式名称
+const getAuthTypeName = (authType) => {
+  const typeMap = {
+    'LOCAL': '本地',
+    'CAS': '统一认证',
+    'BOTH': '双认证'
+  }
+  return typeMap[authType] || authType || '本地'
+}
+
+// 获取认证方式标签类型
+const getAuthType = (authType) => {
+  const typeMap = {
+    'LOCAL': 'info',
+    'CAS': 'success',
+    'BOTH': 'warning'
+  }
+  return typeMap[authType] || 'info'
 }
 
 // 获取学院列表
@@ -625,5 +654,15 @@ const handleImportSubmit = async () => {
   font-size: 12px;
   color: #999;
   line-height: 1.5;
+}
+
+.cas-uid-text {
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+  color: #1890ff;
+}
+
+.no-cas-uid {
+  color: #999;
 }
 </style>
