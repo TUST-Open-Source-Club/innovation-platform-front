@@ -54,21 +54,15 @@
               </el-button>
             </el-form-item>
             
-            <!-- CAS统一身份认证登录 -->
+            <!-- CAS启用时显示提示信息 -->
             <div v-if="casEnabled" class="cas-login-section">
               <div class="divider">
-                <span>或者</span>
-              </div>
-              <el-button
-                type="success"
-                size="large"
-                class="cas-login-btn"
-                @click="handleCasLogin"
-                :loading="casLoading"
-              >
-                <el-icon class="cas-icon"><School /></el-icon>
                 <span>统一身份认证登录</span>
-              </el-button>
+              </div>
+              <div class="cas-redirecting">
+                <el-icon class="loading-icon" :size="24"><Loading /></el-icon>
+                <span>正在跳转到统一认证平台...</span>
+              </div>
               <p v-if="casMockMode" class="cas-hint">当前为测试模式</p>
             </div>
             
@@ -87,7 +81,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock, School } from '@element-plus/icons-vue'
+import { User, Lock, School, Loading } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getCasStatus, casLogin } from '@/api/modules/cas'
 
@@ -122,6 +116,13 @@ onMounted(async () => {
     if (res && res.enabled !== undefined) {
       casEnabled.value = res.enabled
       casMockMode.value = res.mockMode || false
+      
+      // 如果CAS启用，直接跳转到CAS登录（不显示本地登录界面）
+      if (casEnabled.value) {
+        casLoading.value = true
+        casLogin()
+        return
+      }
     }
   } catch (error) {
     console.log('获取CAS状态失败:', error)
@@ -414,6 +415,29 @@ const goToRegister = () => {
   font-size: 12px;
   color: #999;
   margin-top: 8px;
+}
+
+.cas-redirecting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: #52c41a;
+  font-size: 14px;
+}
+
+.cas-redirecting .loading-icon {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .form-footer {
