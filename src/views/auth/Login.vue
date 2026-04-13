@@ -79,13 +79,14 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, School, Loading } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getCasStatus, casLogin } from '@/api/modules/cas'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 const loginFormRef = ref(null)
