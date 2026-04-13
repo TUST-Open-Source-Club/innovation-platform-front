@@ -91,14 +91,16 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { CircleCheckFilled, Message, Phone } from '@element-plus/icons-vue'
 import { completeProfile } from '@/api/modules/cas'
+import { getCurrentUser } from '@/api/modules/auth'
 import { useUserStore } from '@/stores/user'
-import { getUser } from '@/utils/storage'
+import { getUser, setToken, setUser } from '@/utils/storage'
 import api from '@/api'
 
+const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -146,6 +148,37 @@ const fetchColleges = async () => {
 // 获取当前用户信息
 onMounted(async () => {
   await fetchColleges()
+  
+  // 检查URL是否有token参数（从CAS回调重定向过来）
+  const token = route.query.token
+  if (token) {
+    // 保存token
+    setToken(token)
+    userStore.token = token
+    
+    // 获取用户信息
+    try {
+      const userRes = await getCurrentUser()
+      if (userRes.code === 200 && userRes.data) {
+        const user = userRes.data
+        setUser(user)
+        userStore.setUser(user)
+        
+        // 填充表单
+        profileForm.realName = user.realName || ''
+        if (user.email) profileForm.email = user.email
+        if (user.phone) profileForm.phone = user.phone
+        if (user.collegeId) profileForm.collegeId = user.collegeId
+        if (user.role) profileForm.role = user.role
+      } else {
+        throw new Error('获取用户信息失败')
+      }
+    } catch (error) {
+      ElMessage.error('获取用户信息失败，请重新登录')
+      router.push('/login')
+    }
+    return
+  }
   
   // 从 userStore 或 localStorage 获取用户信息
   let user = userStore.user

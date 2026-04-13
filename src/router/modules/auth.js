@@ -21,6 +21,15 @@ export default [
     }
   },
   {
+    path: '/login-error',
+    name: 'LoginError',
+    component: () => import('@/views/auth/LoginError.vue'),
+    meta: {
+      title: '登录失败',
+      requiresAuth: false
+    }
+  },
+  {
     path: '/cas-callback',
     name: 'CasCallback',
     component: () => import('@/views/auth/CasCallback.vue'),

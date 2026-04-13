@@ -94,13 +94,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { mergeAccount, createNewAccount } from '@/api/modules/cas'
 import { useUserStore } from '@/stores/user'
 import { setToken, setUser } from '@/utils/storage'
 
+const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -111,8 +112,39 @@ const casUid = ref('')
 const casName = ref('')
 const duplicateAccount = ref(null)
 
-// 从 sessionStorage 获取合并数据
+// 从 sessionStorage 或 URL 参数获取合并数据
 onMounted(() => {
+  // 优先检查 URL 参数（从后端重定向过来）
+  const dataParam = route.query.data
+  if (dataParam) {
+    try {
+      // Base64 解码
+      const decodedData = atob(dataParam)
+      const data = JSON.parse(decodedData)
+      casUid.value = data.casUid
+      casName.value = data.casName
+      
+      // 复原 duplicateAccount 信息
+      if (data.duplicateAccount) {
+        duplicateAccount.value = data.duplicateAccount
+      } else {
+        // 兼容旧版本，如果没有传输 complete 信息
+        duplicateAccount.value = {
+          username: data.casUid,
+          realName: data.casName,
+          role: 'STUDENT'
+        }
+      }
+      return
+    } catch (error) {
+      console.error('解析URL数据失败:', error)
+      ElMessage.error('页面数据解析失败')
+      router.push('/login')
+      return
+    }
+  }
+  
+  // 从 sessionStorage 获取（传统方式，用于前端直接跳转的情况）
   const mergeData = sessionStorage.getItem('cas_merge_data')
   if (!mergeData) {
     ElMessage.error('页面数据已过期，请重新登录')
