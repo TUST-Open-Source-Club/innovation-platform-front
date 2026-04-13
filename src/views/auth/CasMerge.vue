@@ -113,6 +113,15 @@ const casName = ref('')
 const duplicateAccount = ref(null)
 
 // 从 sessionStorage 或 URL 参数获取合并数据
+// 将 Latin1 字符串转换为 UTF-8 字符串（处理中文）
+const latin1ToUtf8 = (str) => {
+  try {
+    return decodeURIComponent(escape(str))
+  } catch (e) {
+    return str
+  }
+}
+
 onMounted(() => {
   // 优先检查 URL 参数（从后端重定向过来）
   const dataParam = route.query.data
@@ -124,8 +133,9 @@ onMounted(() => {
         .replace(/_/g, '/')
         .padEnd(dataParam.length + (4 - dataParam.length % 4) % 4, '=')
       
-      // Base64 解码
-      const decodedData = atob(standardBase64)
+      // Base64 解码（atob 返回的是 Latin1 编码，需要转换为 UTF-8）
+      const decodedLatin1 = atob(standardBase64)
+      const decodedData = latin1ToUtf8(decodedLatin1)
       const data = JSON.parse(decodedData)
       casUid.value = data.casUid
       casName.value = data.casName
