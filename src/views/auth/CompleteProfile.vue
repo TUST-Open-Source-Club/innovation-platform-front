@@ -192,11 +192,10 @@ onMounted(async () => {
           await new Promise(resolve => setTimeout(resolve, 500))
         }
         
-        const userRes = await getCurrentUser()
-        console.log('[CompleteProfile] 用户信息响应:', userRes)
+        const user = await getCurrentUser()
+        console.log('[CompleteProfile] 用户信息响应:', user)
         
-        if (userRes.code === 200 && userRes.data) {
-          const user = userRes.data
+        if (user) {
           setUser(user)
           userStore.setUser(user)
           console.log('[CompleteProfile] 用户信息已保存:', user.username)
@@ -211,7 +210,7 @@ onMounted(async () => {
           // 成功后跳出循环
           break
         } else {
-          throw new Error('获取用户信息失败: ' + (userRes.message || '未知错误'))
+          throw new Error('获取用户信息失败: 返回数据为空')
         }
       } catch (error) {
         retryCount++

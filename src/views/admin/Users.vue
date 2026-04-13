@@ -48,14 +48,19 @@
       </el-form-item>
     </SearchForm>
 
+    <!-- 统计信息 -->
+    <div class="statistics-bar">
+      <el-tag size="large" type="info">
+        <el-icon><User /></el-icon>
+        总注册人数：<strong>{{ total }}</strong> 人
+      </el-tag>
+    </div>
+
     <!-- 数据表格 -->
     <DataTable
       :data="userList"
       :loading="loading"
-      :total="total"
-      v-model:page="searchForm.pageNum"
-      v-model:pageSize="searchForm.pageSize"
-      @page-change="fetchUserList"
+      :show-index="true"
     >
       <el-table-column prop="username" label="用户名" min-width="120" />
       <el-table-column prop="casUid" label="学号/工号" min-width="120">
@@ -99,6 +104,19 @@
         </template>
       </el-table-column>
     </DataTable>
+
+    <!-- 分页 -->
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="searchForm.pageNum"
+        v-model:page-size="searchForm.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handlePageChange"
+      />
+    </div>
 
     <!-- 创建/编辑用户对话框 -->
     <el-dialog
@@ -262,7 +280,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete, Key, Upload, UploadFilled } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Key, Upload, UploadFilled, User } from '@element-plus/icons-vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import SearchForm from '@/components/common/SearchForm.vue'
 import DataTable from '@/components/common/DataTable.vue'
@@ -455,6 +473,19 @@ const handleReset = () => {
   fetchUserList()
 }
 
+// 每页条数变化
+const handleSizeChange = (size) => {
+  searchForm.pageSize = size
+  searchForm.pageNum = 1
+  fetchUserList()
+}
+
+// 页码变化
+const handlePageChange = (page) => {
+  searchForm.pageNum = page
+  fetchUserList()
+}
+
 // 创建用户
 const handleCreate = () => {
   isEdit.value = false
@@ -631,6 +662,28 @@ const handleImportSubmit = async () => {
 <style scoped>
 .users-management {
   padding: 24px;
+}
+
+.statistics-bar {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.statistics-bar .el-tag {
+  font-size: 14px;
+  padding: 12px 16px;
+}
+
+.statistics-bar .el-icon {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .template-info {

@@ -53,9 +53,8 @@ onMounted(async () => {
       userStore.token = token
       
       // 获取用户信息
-      const userRes = await getCurrentUser()
-      if (userRes.code === 200 && userRes.data) {
-        const user = userRes.data
+      const user = await getCurrentUser()
+      if (user) {
         setUser(user)
         userStore.setUser(user)
         
