@@ -118,7 +118,9 @@ onMounted(async () => {
       casMockMode.value = res.mockMode || false
       
       // 如果CAS启用，直接跳转到CAS登录（不显示本地登录界面）
-      if (casEnabled.value) {
+      // 但是如果URL中有error参数（从错误页返回），则不自动跳转
+      const hasError = route.query.error
+      if (casEnabled.value && !hasError) {
         casLoading.value = true
         casLogin()
         return
@@ -126,7 +128,7 @@ onMounted(async () => {
     }
   } catch (error) {
     console.log('获取CAS状态失败:', error)
-    // 默认不显示CAS登录按钮
+    // 默认不显示本地登录界面
     casEnabled.value = false
   }
 })

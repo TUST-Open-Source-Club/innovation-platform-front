@@ -111,8 +111,8 @@ function getCurrentUserRole() {
 const whiteList = ['/login', '/register', '/login-error', '/cas-callback', '/cas-merge', '/complete-profile'] 
 
 router.beforeEach((to, from, next) => {
-  // 白名单页面直接放行
-  if (whiteList.includes(to.path)) {
+  // 白名单页面直接放行（使用 startsWith 匹配，支持带参数的URL）
+  if (whiteList.some(path => to.path.startsWith(path))) {
     next()
     return
   }

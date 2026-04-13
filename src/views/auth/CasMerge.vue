@@ -118,8 +118,14 @@ onMounted(() => {
   const dataParam = route.query.data
   if (dataParam) {
     try {
+      // 将 URL-safe Base64 转换为标准 Base64（后端用的是 URL 安全编码）
+      const standardBase64 = dataParam
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+        .padEnd(dataParam.length + (4 - dataParam.length % 4) % 4, '=')
+      
       // Base64 解码
-      const decodedData = atob(dataParam)
+      const decodedData = atob(standardBase64)
       const data = JSON.parse(decodedData)
       casUid.value = data.casUid
       casName.value = data.casName
