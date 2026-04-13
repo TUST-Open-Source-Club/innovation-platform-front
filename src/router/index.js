@@ -107,7 +107,8 @@ function getCurrentUserRole() {
 }
 
 // 白名单：不需要登录就能访问的页面
-const whiteList = ['/login', '/register', '/login-error', '/cas-callback', '/cas-merge'] 
+// 注意：/cas-callback /cas-merge /complete-profile 需要在URL中传递token或数据
+const whiteList = ['/login', '/register', '/login-error', '/cas-callback', '/cas-merge', '/complete-profile'] 
 
 router.beforeEach((to, from, next) => {
   // 白名单页面直接放行
