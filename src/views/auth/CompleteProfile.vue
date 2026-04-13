@@ -59,11 +59,14 @@
             </el-select>
           </el-form-item>
 
-          <el-form-item label="身份类型" prop="role">
-            <el-radio-group v-model="profileForm.role" size="large">
-              <el-radio-button label="STUDENT">学生</el-radio-button>
-              <el-radio-button label="TEACHER">教师</el-radio-button>
-            </el-radio-group>
+          <!-- 角色由统一身份认证或注册时确定，不允许用户修改 -->
+          <el-form-item label="身份类型">
+            <div class="role-display">
+              <el-tag :type="profileForm.role === 'TEACHER' ? 'success' : ''" size="large">
+                {{ profileForm.role === 'TEACHER' ? '教师' : '学生' }}
+              </el-tag>
+            </div>
+            <div class="role-hint">身份由统一身份认证系统自动确定，不可修改</div>
           </el-form-item>
 
           <el-form-item>
@@ -127,10 +130,8 @@ const profileRules = {
   ],
   collegeId: [
     { required: true, message: '请选择所属学院', trigger: 'change' }
-  ],
-  role: [
-    { required: true, message: '请选择身份类型', trigger: 'change' }
   ]
+  // 角色不允许修改，无需验证
 }
 
 // 获取学院列表
@@ -164,12 +165,12 @@ onMounted(async () => {
         setUser(user)
         userStore.setUser(user)
         
-        // 填充表单
+        // 填充表单（角色只显示，不允许修改）
         profileForm.realName = user.realName || ''
         if (user.email) profileForm.email = user.email
         if (user.phone) profileForm.phone = user.phone
         if (user.collegeId) profileForm.collegeId = user.collegeId
-        if (user.role) profileForm.role = user.role
+        if (user.role) profileForm.role = user.role  // 仅用于显示
       } else {
         throw new Error('获取用户信息失败')
       }
@@ -188,7 +189,7 @@ onMounted(async () => {
   
   if (user) {
     profileForm.realName = user.realName || ''
-    // 如果用户已有部分信息，预填充
+    // 如果用户已有部分信息，预填充（角色仅显示不修改）
     if (user.email) profileForm.email = user.email
     if (user.phone) profileForm.phone = user.phone
     if (user.collegeId) profileForm.collegeId = user.collegeId
@@ -206,11 +207,11 @@ const handleSubmit = async () => {
     if (valid) {
       loading.value = true
       try {
+        // 不传递 role，由后端保持原有角色（CAS返回或默认学生）
         const submitData = {
           email: profileForm.email,
           phone: profileForm.phone,
-          collegeId: profileForm.collegeId,
-          role: profileForm.role
+          collegeId: profileForm.collegeId
         }
         
         const res = await completeProfile(submitData)
@@ -222,7 +223,7 @@ const handleSubmit = async () => {
             currentUser.email = profileForm.email
             currentUser.phone = profileForm.phone
             currentUser.collegeId = profileForm.collegeId
-            currentUser.role = profileForm.role
+            // 不更新 role，保持原有角色
             currentUser.isProfileComplete = 1
             
             // 找到学院名称
@@ -348,6 +349,17 @@ const handleSkip = () => {
 .skip-section {
   text-align: center;
   margin-top: 16px;
+}
+
+.role-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.role-display {
+  padding: 8px 0;
 }
 
 @media (max-width: 540px) {

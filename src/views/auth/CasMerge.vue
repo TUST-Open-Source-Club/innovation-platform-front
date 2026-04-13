@@ -233,29 +233,26 @@ const handleSubmit = async () => {
 
 const handleMerge = async () => {
   try {
-    const res = await mergeAccount({
+    // handleResponse 返回的是 data 部分，不是整个响应
+    const data = await mergeAccount({
       casUid: casUid.value,
       realName: casName.value,
       password: password.value
     })
 
-    if (res.code === 200) {
-      const data = res.data
-      setToken(data.token)
-      setUser(data.user)
-      userStore.token = data.token
-      userStore.setUser(data.user)
-      
-      sessionStorage.removeItem('cas_merge_data')
-      ElMessage.success('账号合并成功！')
-      
-      if (data.needCompleteProfile) {
-        router.push('/complete-profile')
-      } else {
-        router.push('/dashboard')
-      }
+    // 合并成功，直接使用返回的数据
+    setToken(data.token)
+    setUser(data.user)
+    userStore.token = data.token
+    userStore.setUser(data.user)
+    
+    sessionStorage.removeItem('cas_merge_data')
+    ElMessage.success('账号合并成功！')
+    
+    if (data.needCompleteProfile) {
+      router.push('/complete-profile')
     } else {
-      ElMessage.error(res.message || '合并失败')
+      router.push('/dashboard')
     }
   } catch (error) {
     console.error('合并账号失败:', error)
@@ -276,25 +273,21 @@ const handleCreateNew = async () => {
     )
 
     if (confirm) {
-      const res = await createNewAccount(casUid.value, casName.value)
+      // handleResponse 返回的是 data 部分
+      const data = await createNewAccount(casUid.value, casName.value)
 
-      if (res.code === 200) {
-        const data = res.data
-        setToken(data.token)
-        setUser(data.user)
-        userStore.token = data.token
-        userStore.setUser(data.user)
-        
-        sessionStorage.removeItem('cas_merge_data')
-        ElMessage.success('新账号创建成功！')
-        
-        if (data.needCompleteProfile) {
-          router.push('/complete-profile')
-        } else {
-          router.push('/dashboard')
-        }
+      setToken(data.token)
+      setUser(data.user)
+      userStore.token = data.token
+      userStore.setUser(data.user)
+      
+      sessionStorage.removeItem('cas_merge_data')
+      ElMessage.success('新账号创建成功！')
+      
+      if (data.needCompleteProfile) {
+        router.push('/complete-profile')
       } else {
-        ElMessage.error(res.message || '创建失败')
+        router.push('/dashboard')
       }
     }
   } catch (error) {
