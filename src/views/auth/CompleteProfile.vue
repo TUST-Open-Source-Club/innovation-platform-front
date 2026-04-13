@@ -82,7 +82,20 @@
           </el-form-item>
         </el-form>
 
-        <div class="skip-section">
+        <!-- 加载错误提示 -->
+        <div v-if="loadError" class="error-section">
+          <el-alert
+            :title="loadError"
+            type="error"
+            :closable="false"
+            show-icon
+          />
+          <el-button type="primary" @click="retryLoad" style="margin-top: 16px;">
+            刷新页面重试
+          </el-button>
+        </div>
+
+        <div class="skip-section" v-else>
           <el-button link type="info" @click="handleSkip">
             稍后完善，先进入系统
           </el-button>
@@ -108,6 +121,7 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const loading = ref(false)
+const loadError = ref('')  // 加载错误信息
 const profileFormRef = ref(null)
 const collegeList = ref([])
 
@@ -146,37 +160,69 @@ const fetchColleges = async () => {
   }
 }
 
+// 刷新页面重试
+const retryLoad = () => {
+  window.location.reload()
+}
+
 // 获取当前用户信息
 onMounted(async () => {
   await fetchColleges()
   
   // 检查URL是否有token参数（从CAS回调重定向过来）
   const token = route.query.token
+  console.log('[CompleteProfile] URL token:', token ? '存在' : '不存在')
+  
   if (token) {
-    // 保存token
+    // 先保存token到localStorage（这是最重要的，确保API请求能够带上token）
     setToken(token)
     userStore.token = token
+    console.log('[CompleteProfile] Token 已保存到 store 和 localStorage')
     
-    // 获取用户信息
-    try {
-      const userRes = await getCurrentUser()
-      if (userRes.code === 200 && userRes.data) {
-        const user = userRes.data
-        setUser(user)
-        userStore.setUser(user)
+    // 获取用户信息（尝试多次，处理时序问题）
+    let retryCount = 0
+    const maxRetries = 3
+    
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`[CompleteProfile] 尝试获取用户信息 (${retryCount + 1}/${maxRetries})...`)
         
-        // 填充表单（角色只显示，不允许修改）
-        profileForm.realName = user.realName || ''
-        if (user.email) profileForm.email = user.email
-        if (user.phone) profileForm.phone = user.phone
-        if (user.collegeId) profileForm.collegeId = user.collegeId
-        if (user.role) profileForm.role = user.role  // 仅用于显示
-      } else {
-        throw new Error('获取用户信息失败')
+        // 每次尝试间隔 500ms
+        if (retryCount > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+        
+        const userRes = await getCurrentUser()
+        console.log('[CompleteProfile] 用户信息响应:', userRes)
+        
+        if (userRes.code === 200 && userRes.data) {
+          const user = userRes.data
+          setUser(user)
+          userStore.setUser(user)
+          console.log('[CompleteProfile] 用户信息已保存:', user.username)
+          
+          // 填充表单（角色只显示，不允许修改）
+          profileForm.realName = user.realName || ''
+          if (user.email) profileForm.email = user.email
+          if (user.phone) profileForm.phone = user.phone
+          if (user.collegeId) profileForm.collegeId = user.collegeId
+          if (user.role) profileForm.role = user.role  // 仅用于显示
+          
+          // 成功后跳出循环
+          break
+        } else {
+          throw new Error('获取用户信息失败: ' + (userRes.message || '未知错误'))
+        }
+      } catch (error) {
+        retryCount++
+        console.error(`[CompleteProfile] 第 ${retryCount} 次获取失败:`, error)
+        
+        if (retryCount >= maxRetries) {
+          loadError.value = '获取用户信息失败，请点击下方按钮刷新页面重试'
+          // 不跳转到登录页，让用户可以刷新页面重试
+          return
+        }
       }
-    } catch (error) {
-      ElMessage.error('获取用户信息失败，请重新登录')
-      router.push('/login')
     }
     return
   }
@@ -360,6 +406,15 @@ const handleSkip = () => {
 
 .role-display {
   padding: 8px 0;
+}
+
+.error-section {
+  text-align: center;
+  margin-top: 16px;
+  padding: 16px;
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
 }
 
 @media (max-width: 540px) {
