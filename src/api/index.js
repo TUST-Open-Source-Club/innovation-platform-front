@@ -13,7 +13,7 @@ const api = axios.create({
  * 优先从 store 获取，如果没有则从 localStorage 获取（解决刷新后 token 丢失问题）
  */
 function getValidToken() {
-  const userStore = useUserStore()
+  let userStore = useUserStore()
   // 优先从 store 获取
   if (userStore.token) {
     return userStore.token
