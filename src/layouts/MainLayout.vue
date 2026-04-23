@@ -184,11 +184,19 @@ const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
 }
 
-const handleCommand = (command) => {
+const handleCommand = async (command) => {
   if (command === 'logout') {
-    userStore.logout()
+    // 调用logout，如果是CAS用户会返回CAS登出地址
+    const casLogoutUrl = await userStore.logout()
     ElMessage.success('已退出登录')
-    router.push('/login')
+    
+    if (casLogoutUrl) {
+      // CAS用户：跳转到CAS退出页面
+      window.location.href = casLogoutUrl
+    } else {
+      // 普通用户：跳转到本地登录页
+      router.push('/login')
+    }
   } else if (command === 'password') {
     router.push('/change-password')
   } else if (command === 'profile') {
