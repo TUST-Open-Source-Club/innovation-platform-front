@@ -115,13 +115,18 @@ const loginRules = {
   ]
 }
 
-// 检查CAS状态
+// 检查CAS状态并自动跳转
 onMounted(async () => {
   try {
     const res = await getCasStatus()
     if (res && res.enabled !== undefined) {
       casEnabled.value = res.enabled
       casMockMode.value = res.mockMode || false
+      // CAS启用时自动跳转CAS登录
+      if (casEnabled.value) {
+        casLoading.value = true
+        casLogin()
+      }
     }
   } catch (error) {
     console.log('获取CAS状态失败:', error)
