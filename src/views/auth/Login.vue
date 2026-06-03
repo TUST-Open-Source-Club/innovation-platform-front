@@ -54,15 +54,20 @@
               </el-button>
             </el-form-item>
             
-            <!-- CAS启用时显示提示信息 -->
+            <!-- CAS启用时显示统一身份认证登录按钮 -->
             <div v-if="casEnabled" class="cas-login-section">
               <div class="divider">
+                <span>或</span>
+              </div>
+              <el-button
+                size="large"
+                :loading="casLoading"
+                class="cas-login-btn"
+                @click="handleCasLogin"
+              >
+                <el-icon class="cas-icon"><School /></el-icon>
                 <span>统一身份认证登录</span>
-              </div>
-              <div class="cas-redirecting">
-                <el-icon class="loading-icon" :size="24"><Loading /></el-icon>
-                <span>正在跳转到统一认证平台...</span>
-              </div>
+              </el-button>
               <p v-if="casMockMode" class="cas-hint">当前为测试模式</p>
             </div>
             
@@ -81,7 +86,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock, School, Loading } from '@element-plus/icons-vue'
+import { User, Lock, School } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getCasStatus, casLogin } from '@/api/modules/cas'
 
@@ -110,26 +115,21 @@ const loginRules = {
   ]
 }
 
-// 检查CAS状态
+// 检查CAS状态并自动跳转
 onMounted(async () => {
   try {
     const res = await getCasStatus()
     if (res && res.enabled !== undefined) {
       casEnabled.value = res.enabled
       casMockMode.value = res.mockMode || false
-      
-      // 如果CAS启用，直接跳转到CAS登录（不显示本地登录界面）
-      // 但是如果URL中有error参数（从错误页返回），则不自动跳转
-      const hasError = route.query.error
-      if (casEnabled.value && !hasError) {
+      // CAS启用时自动跳转CAS登录
+      if (casEnabled.value) {
         casLoading.value = true
         casLogin()
-        return
       }
     }
   } catch (error) {
     console.log('获取CAS状态失败:', error)
-    // 默认不显示本地登录界面
     casEnabled.value = false
   }
 })
@@ -420,27 +420,11 @@ const goToRegister = () => {
   margin-top: 8px;
 }
 
-.cas-redirecting {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 16px;
-  color: #52c41a;
-  font-size: 14px;
-}
-
-.cas-redirecting .loading-icon {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.cas-hint {
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
 }
 
 .form-footer {

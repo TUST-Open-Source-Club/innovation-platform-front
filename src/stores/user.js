@@ -43,13 +43,22 @@ export const useUserStore = defineStore('user', () => {
     const currentUser = user.value || getUser()
     const isCasUser = currentUser && (currentUser.authType === 'CAS' || currentUser.authType === 'BOTH')
 
-    // 先通知后端使token失效（所有用户类型都执行）
-    try {
-      if (isCasUser) {
-        await logoutApi()
-      } else {
-        await logoutApi()
+    // 先获取CAS登出地址（必须在清除token之前，否则请求会401）
+    let casLogoutUrl = null
+    if (casLogout && isCasUser) {
+      try {
+        const casLogoutInfo = await getCasLogoutUrl()
+        if (casLogoutInfo.enabled && casLogoutInfo.fullLogoutUrl) {
+          casLogoutUrl = casLogoutInfo.fullLogoutUrl
+        }
+      } catch (error) {
+        console.warn('获取CAS登出地址失败:', error)
       }
+    }
+
+    // 通知后端使token失效
+    try {
+      await logoutApi()
     } catch (error) {
       console.warn('通知后端退出登录失败:', error)
     }
@@ -60,19 +69,7 @@ export const useUserStore = defineStore('user', () => {
     removeToken()
     removeUser()
 
-    // 如果是CAS用户且需要CAS登出，获取CAS登出地址
-    if (casLogout && isCasUser) {
-      try {
-        const casLogoutInfo = await getCasLogoutUrl()
-        if (casLogoutInfo.enabled && casLogoutInfo.fullLogoutUrl) {
-          return casLogoutInfo.fullLogoutUrl
-        }
-      } catch (error) {
-        console.warn('获取CAS登出地址失败:', error)
-      }
-    }
-
-    return null
+    return casLogoutUrl
   }
 
   function setUser(userData) {

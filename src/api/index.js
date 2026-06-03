@@ -54,7 +54,11 @@ api.interceptors.response.use(
         // 401可能是token过期或被踢出（CAS单点登出），不执行CAS登出
         userStore.logout(false)
         ElMessage.error('登录已过期，请重新登录')
-        window.location.href = '/login'
+        // 使用 router 跳转而非 window.location.href，避免页面完全刷新
+        // 且只在当前不在登录页时跳转，防止重复跳转
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
       } else {
         const msg = data?.message || (status === 403 ? '无权限访问' : status === 404 ? '接口不存在' : status === 500 ? '服务器错误' : '请求失败')
         ElMessage.error(msg)
