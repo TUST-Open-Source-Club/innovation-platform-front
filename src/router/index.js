@@ -53,8 +53,8 @@ const router = createRouter({
   routes
 })
 
-// 白名单
-const whiteList = ['/login', '/register']
+// 白名单：不需要登录即可访问的路径
+const whiteList = ['/login', '/register', '/login-error', '/cas-callback', '/cas-merge']
 
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
@@ -72,20 +72,31 @@ router.beforeEach(async (to, from, next) => {
   }
 
   const isLogin = !!userStore.token
-  const userRole = userStore.user?.role
+  const user = userStore.user
+  const userRole = user?.role
 
   // 2. 在白名单
   if (whiteList.includes(to.path)) {
     if (isLogin) {
-      // 已登录还想去登录/注册 → 去 dashboard
-      next('/dashboard')
+      // 已登录还想去登录/注册 → 检查是否需要完善资料
+      if (user && !user.isProfileComplete && to.path !== '/complete-profile') {
+        next('/complete-profile')
+      } else {
+        next('/dashboard')
+      }
     } else {
       next()
     }
     return
   }
 
-  // 3. 需要登录但未登录
+  // 3. 需要完善资料的特殊处理：已登录但资料未完善的用户，只能访问 complete-profile
+  if (isLogin && user && !user.isProfileComplete && to.path !== '/complete-profile') {
+    next('/complete-profile')
+    return
+  }
+
+  // 4. 需要登录但未登录
   if (to.meta.requiresAuth && !isLogin) {
     next({
       path: '/login',
@@ -94,7 +105,7 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
-  // 4. 角色权限判断
+  // 5. 角色权限判断
   if (to.meta.roles?.length && userRole) {
     const hasPermission = to.meta.roles.includes(userRole)
     if (!hasPermission) {
